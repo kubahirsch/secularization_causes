@@ -30,12 +30,12 @@ head(happiness2016)
 ggplot(happiness2016) + geom_point(aes(x= Happiness.Rank, y = Happiness.Score), colour = "skyblue")+
   theme_tufte()+xlab("Kraje") + ylab("Wynik szczęścia")
 
-#spoko nic ciekawego, spójrzy teraz jak wygląda wynik szęścia na GPD per capita
+#wynik szęścia na GPD per capita
 
 ggplot(happiness2016) + geom_point(aes(x= Economy..GDP.per.Capita., y = Happiness.Score), colour = "skyblue")+
   theme_tufte()
 
-#hmm ok, przypadek? sprawdźmy czy mamy jakieś zależności dla całości
+#sprawdźmy czy mamy jakieś zależności dla całości
 
 #dla 20 najszczęśliwszych i 20 najmniej
 
@@ -52,7 +52,7 @@ head(bezkraju)
 bezkraju <- bezkraju[, -1]
 head(bezkraju)
 
-#teraz sprawdźmy korelacje
+#korelacje
 
 corhap <- cor(bezkraju , method='spearman')
 ggcorrplot(corhap, method = "square")
@@ -66,14 +66,14 @@ head(bezkrajubieda)
 corunhap <- cor(bezkrajubieda , method='spearman')
 ggcorrplot(corunhap, method = "square")
 
-#teraz dla całości
+#dla całości
 
 całośćbezkraju <- happiness2016[, -1]
 całośćbezkraju <- całośćbezkraju[, -1]
 corall <- cor(całośćbezkraju , method='spearman')
 ggcorrplot(corall, method = "square")
 
-#spoko nic ciekawego, spójrzy teraz jak wygląda wynik szęścia na GPD per capita
+#wynik szęścia na GPD per capita
 
 ggplot(stat1) + geom_point(aes(x= Economy..GDP.per.Capita., y = Happiness.Score), colour = "skyblue")+
   theme_tufte()
@@ -84,7 +84,7 @@ ggplot(stat1, aes(x = Economy..GDP.per.Capita., y = Happiness.Score)) +
   geom_jitter(colour = "red") +
   geom_smooth(span = .3, colour = "black") +
   theme_tufte()
-# teraz podzielmy bazę na kontynenty
+#dzielenie bazy na kontynenty
 
 Europa <- stat1[which(stat1$Region == "Western Europe" | stat1$Region == "Central and Eastern Europe"), ]
 
@@ -100,14 +100,14 @@ AmerykaPln <- stat1[which(stat1$Region == "North America"),]
 
 AmerykaLac <- stat1[which(stat1$Region == "Latin America and Caribbean"),]
 
-# teraz dodajmy dane, żeby nie miały zbyt małej próbki
+# dodawanie danych, żeby nie miały zbyt małej próbki
 
 Ameryki <- stat1[which(stat1$Region == "North America" | stat1$Region == "Latin America and Caribbean"), ]
 
 AzjaAustralia <- stat1[which(stat1$Region == "Eastern Asia" | stat1$Region == "Southeastern Asia" | 
                                stat1$Region == "Southern Asia" | stat1$Region =="Australia and New Zealand" ), ]
 
-#teraz sprawdźmy to samo dla regionów
+#to samo dla regionów
 
 ggplot(Europa, aes(x = Economy..GDP.per.Capita., y = Happiness.Score)) +
   geom_jitter(colour = "blue") +
@@ -129,7 +129,7 @@ ggplot(Ameryki, aes(x = Economy..GDP.per.Capita., y = Happiness.Score)) +
   geom_smooth(span = .3, colour = "aquamarine") +
   theme_tufte()
 
-#jak widać tylko w Afryce i Europie , dolny wskaźnik GDP nie jest odwzorowany w Happiness Score, sprawdźmy z czym to się wiąże
+#tylko w Afryce i Europie dolny wskaźnik GDP nie jest odwzorowany w Happiness Score, sprawdźmy z czym to się wiąże
 
 Afrykabezkraju <- Afryka[, -1]
 Afrykabezkraju <- Afrykabezkraju[, -1]
@@ -142,10 +142,31 @@ Europabezkraju <-Europabezkraju[, -1]
 coreur <- cor(Europabezkraju , method='spearman')
 ggcorrplot(coreur, method = "square")
 
+#dodajmy do nich id
+całośćbezkraju$id <- 1:157   # oznacza dodaj tabelkę id
+
+training <- sample(całośćbezkraju$id, 60) #do treningu wylosuj 60 przypadków
+
+test <- całośćbezkraju$id[!całośćbezkraju$id %in% training] #podzieliłem losowo na dwie grupy
+
+hapTest <- całośćbezkraju[test,] 
+
+hapTrain <- całośćbezkraju[training,]
+nrow(hapTest)
+str(hapTrain)
+
+#model zerowy
+set.seed(123)
+hapNull <- ulam(
+  alist(
+    Happiness.Score ~ dnorm( mu , sigma ) ,
+    mu <- a,
+    a ~ dnorm(100 , 100) ,    #uprzednie założenia średniej
+    sigma ~ dunif( 0 , 50 )   #odchylenie standardowe musi być dodatnie
+  ) , data=hapTrain, log_lik = TRUE)
 
 
-
-#Zmieniam ustawienia R tak, żeby nie było notacji typu e+07
+#Zmiana ustawienia R tak, żeby nie było notacji typu e+07
 options(scipen = 999)
 
 #wczytuje dane o pkb
